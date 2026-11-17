@@ -372,3 +372,38 @@ test('node controls follow hover, viewport and history without changing selectio
   await page.keyboard.press('Control+z')
   await expect(child).toHaveCount(0)
 })
+
+test('fold controls follow floating tree direction when opened folded and expanded', async ({ page }) => {
+  const zip = await JSZip.loadAsync(readFileSync('tests/fixtures/map-with-content.xmind'))
+  const sheets = JSON.parse(await zip.file('content.json')!.async('string'))
+  const floating = sheets[0].rootTopic.children.detached[0]
+  floating.branch = 'folded'
+  floating.children = { attached: [{ id: 'floating-direction-child', title: 'Floating child' }] }
+  for (const direction of ['right', 'left']) {
+    if (direction === 'left') floating.structureClass = 'org.xmind.ui.logic.left'
+    zip.file('content.json', JSON.stringify(sheets))
+    await page.goto('/')
+    await page.locator('#input-dialog').setInputFiles({ name: 'floating.xmind', mimeType: 'application/octet-stream', buffer: Buffer.from(await zip.generateAsync({ type: 'uint8array' })) })
+    await expect(page.getByRole('status')).toHaveText('floating.xmind')
+    const topic = page.locator(`[data-topic-id="${floating.id}"]`)
+    const root = page.locator(`[data-topic-id="${sheets[0].rootTopic.id}"]`)
+    const control = page.locator(`[data-fold-topic-id="${floating.id}"]`)
+    const child = page.locator('[data-topic-id="floating-direction-child"]')
+    const checkSide = async () => {
+      const bounds = (await topic.locator('[data-name="topic-shape-group"]').boundingBox())!
+      const button = (await control.boundingBox())!
+      expect(direction === 'right' ? (button.x + button.width / 2) > bounds.x + bounds.width / 2 : (button.x + button.width / 2) < bounds.x + bounds.width / 2).toBe(true)
+    }
+    const a = (await topic.boundingBox())!, b = (await root.boundingBox())!
+    expect(a.x + a.width / 2).toBeLessThan(b.x + b.width / 2)
+    await expect(control).toHaveAccessibleName('展开主题')
+    await checkSide()
+    await control.click()
+    await expect(child).toBeVisible()
+    await expect(control).toHaveAccessibleName('折叠主题')
+    await checkSide()
+    await control.click()
+    await expect(child).toHaveCount(0)
+    await checkSide()
+  }
+})

@@ -88,7 +88,6 @@ function App() {
       return;
     }
     const root = doc.sheets[m.sheet].rootTopic;
-    const center = topicBounds(container, root.id);
     const list: FoldControl[] = [];
     const viewport = container.getBoundingClientRect();
     for (const [id, entry] of doc.index) {
@@ -97,7 +96,7 @@ function App() {
       if (!rect) continue;
       const folded = entry.topic.branch === "folded";
       if (!folded && id !== hover && id !== focused && id !== m.selected) continue;
-      const position = foldPosition(rect, center);
+      const position = foldPosition(container, doc, id, rect);
       if (
         position.x - 12 < viewport.left ||
         position.x + 12 > viewport.right ||
