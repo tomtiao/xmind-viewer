@@ -1,37 +1,18 @@
 {
   "compilerOptions": {
-    "target": "es2016",
-    "module": "commonjs",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "declaration": true,
-    "outDir": "dist/",
-    "rootDir": "src/",
-    "baseUrl": ".",
-    "paths": {
-      "common/*": [
-        "./src/common/*"
-      ],
-      "model/*": [
-        "./src/model/*"
-      ],
-      "utils/*": [
-        "./src/utils/*"
-      ],
-      "view/*": [
-        "./src/view/*"
-      ],
-      "viewController/*": [
-        "./src/viewController/*"
-      ],
-      "structure/*": [
-        "./src/structure/*"
-      ]
-    }
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "strict": false,
+    "useDefineForClassFields": false,
+    "types": ["vite/client"]
   },
-  "exclude": [
-    "dist",
-    "node_modules",
-    "test",
-  ]
+  "include": ["src", "tests", "example/content.json"]
 }

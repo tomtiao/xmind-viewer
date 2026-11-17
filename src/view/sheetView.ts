@@ -1,9 +1,7 @@
 import View from './view'
 import ViewType from '../common/constants/views'
-const { SVG, registerWindow } =  require('@svgdotjs/svg.js')
-import { G, Svg } from '@svgdotjs/svg.js'
-const { createSVGWindow } = require('svgdom')
-import Bounds from '../utils/bounds'
+import { SVG, type G, type Svg } from '@svgdotjs/svg.js'
+import type Bounds from '../utils/bounds'
 
 export default class SheetView extends View {
 
@@ -18,14 +16,7 @@ export default class SheetView extends View {
   constructor() {
     super()
 
-    if (typeof((<any>global).window) === 'undefined') {
-      const window = createSVGWindow()
-      const document = window.document
-      registerWindow(window, document)
-      this.canvas = SVG(document.documentElement)
-    } else {
-      this.canvas = SVG()
-    }
+    this.canvas = SVG()
     this._content = this.canvas.group().data('name', 'sheet')
     this._connectionContainer = this._content.group().data('name', 'connection-container')
     this._branchContainer = this._content.group().data('name', 'branch-container')

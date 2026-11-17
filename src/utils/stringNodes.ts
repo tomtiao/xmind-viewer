@@ -1,15 +1,25 @@
-import FontInfo from './fontInfo'
-import { createCanvas } from 'canvas'
+import type FontInfo from './fontInfo'
 
 interface FontNode {
-  content?: string,
-  style?: FontInfo
+  content: string,
+  style: FontInfo
 }
 
-const FONT_WEIGHT_STRING_TO_NUMBER = {
+const FONT_WEIGHT_STRING_TO_NUMBER: Record<string, number> = {
   'normal': 400,
   'regular': 400,
   'bold': 700
+}
+
+let measurementContext: CanvasRenderingContext2D | undefined
+
+function getMeasurementContext(): CanvasRenderingContext2D {
+  if (!measurementContext) {
+    const context = document.createElement('canvas').getContext('2d')
+    if (!context) throw new Error('当前浏览器不支持 Canvas 文字测量。')
+    measurementContext = context
+  }
+  return measurementContext
 }
 
 function str2NodesArr(s: string, fontInfo: FontInfo): FontNode[][] {
@@ -34,10 +44,10 @@ function getTextSize(node: FontNode) {
   let fontWeight = node.style.fontWeight
 
   if (FONT_WEIGHT_STRING_TO_NUMBER[`${fontWeight}`.toLowerCase()]) {
-    fontWeight = FONT_WEIGHT_STRING_TO_NUMBER[`${fontWeight}`.toLowerCase()]
+    fontWeight = String(FONT_WEIGHT_STRING_TO_NUMBER[`${fontWeight}`.toLowerCase()])
   }
 
-  let fontSize = <number>Number.parseInt(node.style.fontSize)
+  let fontSize = Number.parseInt(node.style.fontSize)
   const preFontSize = fontSize
   let ratio = 1
   if (fontSize < 12) {
@@ -50,9 +60,9 @@ function getTextSize(node: FontNode) {
   const fontFamily = node.style.fontFamily
   const fontArr = [fontStyle, fontWeight, fontSizePx, fontFamily]
 
-  // const canvas = document.createElement('canvas')
-  const canvas = createCanvas(200, 200)
-  const ctx = canvas.getContext('2d')
+  const ctx = getMeasurementContext()
+  // Reset the cached context so an unsupported font cannot retain the previous one.
+  ctx.font = '10px sans-serif'
   ctx.font = fontArr.filter(item => item).join(' ')
 
   const lines = node.content.split('\n')
@@ -69,5 +79,6 @@ export {
   str2NodesArr,
   getNodesSize,
   getTextSize,
-  FontNode,
 }
+
+export type { FontNode }

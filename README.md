@@ -1,74 +1,44 @@
-# **DEPRECATED** - Never ever use it in a production environment!
+# XMind Viewer
 
-# XMind Viewer 
+内部 XMind MAP 编辑器，基于 XMind 官方早期 MIT 开源项目。
 
-XMind Viewer, is a lightweight library to parse a `.xmind` file and render it in `SVG`.
+## 运行
 
-It's very useful for showing a mind map on any web pages. Like a blog post, a book introduction, a page navigation, etc. All versions of XMind files are compatiable, which means you can generate an XMind file with `XMind SDK` and then render it with `XMind Viewer`. Cool?
+Node.js 版本见 [.nvmrc](.nvmrc)，兼容范围见 [package.json](package.json)。
 
-XMind Viewer is an official project, made by XMind team, and written in TypeScript.
-
-
-## Usage and Getting Started
-
-### Usage in Node.js
-
-```shell
-$ npm i --save xmind-viewer
+```sh
+npm ci
+npm run dev
 ```
 
-```js
-const { loadFromXMind, SnowbrushRenderer } = require('xmind-viewer')
+```sh
+npm run build
+npm run preview
 ```
 
-### Simple Usage
+`dist/` 为静态站点产物，支持子目录部署，通过 HTTP 服务访问。
 
-```ts
-import JSZip from 'jszip'
-import { loadFromXMind, SnowbrushRenderer } from 'xmind-viewer'
+## 验证
 
-new JSZip().loadAsync(zipFile).then(zip => {
-	loadFromXMind(zip).then(data => {
-		const renderer = new SnowbrushRenderer(data.sheets)
-		return renderer.render({ sheetIndex: 0 })
-	}).then(svg => {
-		// document.body.appendChild(svg)
-	})
-})
+| 命令 | 用途 |
+| --- | --- |
+| `npm run check` | 单元测试、类型检查、生产构建 |
+| `npm run check:all` | 增加生产版本浏览器测试 |
+| `npm run test:watch` | 单元测试监听 |
+
+浏览器测试从 PATH 查找系统 Chromium／Chrome。可覆盖路径：
+
+```sh
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:browser
 ```
 
-### loadFromXMind()
+## 实现依据
 
-`loadFromXMind()` can be used to convert `.xmind` files into `sheets` that can be read by Snowbrush Render
+- [工作约定](AGENTS.md)：任务恢复与文档维护规则。
+- [实现路线](docs/implementation-roadmap.md)：范围、架构与验收。
+- [实施进度](docs/implementation-progress.md)：当前任务、验证和未决问题。
+- [回归样本](tests/fixtures/README.md)：输入来源及视觉对照方法。
 
-### Snowbrush Renderer
+## 许可证
 
-Snowbrush Renderer accepts an array of sheets as a constructor argument, and SVG will be generated based on the content of the sheet after using `render()`.
-
-> P.S. Snowbrush is an internal code name for render engine.
-
-#### Methods
-
-##### .render(options: RenderOptions) => Svg
-
-SVG will be generated based on the content of the sheet after using `render()`.
-You can use options to determine which Sheet you want to display.
-
-###### RenderOptions
-
-`sheetIndex`: Select which sheet you want to render.
-
-##### .svg => Svg
-
-Get the generated SVG, it must be called after `render()`.
-
-##### .transform(x, y)
-
-Move the center point of the mindmap to the location (x, y).
-
-## Notice
-
-In addition to these exposed API, the rest of the code can change at any time.
-
-## License
-See the [MIT License](LICENSE).
+[MIT License](LICENSE)，保留 XMind Ltd. 原始版权声明。[上游项目](https://github.com/xmindltd/xmind-viewer)。

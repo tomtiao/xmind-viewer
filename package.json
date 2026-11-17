@@ -1,11 +1,24 @@
 {
   "name": "xmind-viewer",
   "version": "1.1.2",
-  "description": "",
-  "main": "dist/index.js",
+  "private": true,
+  "type": "module",
+  "description": "Browser-based XMind viewer and foundation for an internal MAP editor",
+  "engines": {
+    "node": "^24.0.0 || >=26.0.0",
+    "npm": ">=11"
+  },
+  "packageManager": "npm@11.19.1",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "rm -rf ./dist && node_modules/.bin/tsc"
+    "dev": "vite",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:browser": "npm run build && playwright test",
+    "check": "npm test && npm run build",
+    "check:all": "npm run check && playwright test"
   },
   "author": {
     "name": "XMind Ltd.",
@@ -13,18 +26,15 @@
     "url": "https://www.xmind.net"
   },
   "license": "MIT",
-  "devDependencies": {
-    "typescript": "^3.7.3"
-  },
   "dependencies": {
-    "@svgdotjs/svg.js": "^3.0.16",
-    "@types/jszip": "^3.1.6",
-    "canvas": "^2.6.1",
-    "jsdom": "^16.4.0",
-    "jszip": "^3.2.2",
-    "svgdom": "^0.1.8"
+    "@svgdotjs/svg.js": "^3.2.8",
+    "jszip": "^3.10.2"
   },
-  "files": [
-    "dist"
-  ]
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^24.19.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
 }
