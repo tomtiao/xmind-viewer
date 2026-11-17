@@ -17,6 +17,8 @@ interface TopicLayout {
   topicShapeGroupCell: Cell,
   topicShapePaddingGroupCell: Cell,
   topicCell: Cell,
+  imageCell?: Cell,
+  markerCell?: Cell,
 }
 
 export default class TopicLayoutWorker {
@@ -126,6 +128,13 @@ export default class TopicLayoutWorker {
       )
     }
 
+    const { imageCell, markerCell } = this._topicLayout
+    if (imageCell) view.imagePosition = imageCell.getPosition()
+    if (markerCell) view.markerPosition = {
+      x: markerCell.getPosition().x + innerGroupCell.getPosition().x + middleGroupCell.getPosition().x,
+      y: markerCell.getPosition().y + innerGroupCell.getPosition().y + middleGroupCell.getPosition().y,
+    }
+
     topicViewController.shapeBounds = {
       x: -topicShapePaddingGroupCell.getSize().width / 2,
       y: -topicShapePaddingGroupCell.getSize().height / 2,
@@ -153,12 +162,23 @@ export default class TopicLayoutWorker {
     topicTitleGroupCell.add(topicTitleCell)
 
     const innerGroupCell = this._createInnerGroupCell()
+    const markerCell = topicViewController.model.markers.length ? new Cell() : undefined
+    if (markerCell) {
+      markerCell.setPreferredSize({ width: topicViewController.model.markers.length * 16, height: 16 })
+      innerGroupCell.add(markerCell)
+    }
     innerGroupCell.add(topicTitleGroupCell)
 
     const middleGroupCell = this._createMiddleGroupCell()
     middleGroupCell.add(innerGroupCell)
 
     const topicShapeGroupCell = this._createTopicShapeGroupCell()
+    const image = topicViewController.model.renderImage
+    const imageCell = image ? new Cell() : undefined
+    if (imageCell) {
+      imageCell.setPreferredSize({ width: image.width, height: image.height })
+      topicShapeGroupCell.add(imageCell)
+    }
     topicShapeGroupCell.add(middleGroupCell)
 
     const topicShapePaddingGroupCell = this._createTopicShapePaddingGroupCell()
@@ -175,6 +195,8 @@ export default class TopicLayoutWorker {
       topicShapeGroupCell,
       topicShapePaddingGroupCell,
       topicCell,
+      imageCell,
+      markerCell,
     }
   }
 

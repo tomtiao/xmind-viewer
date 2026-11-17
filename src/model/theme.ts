@@ -8,6 +8,7 @@ export interface ThemeData extends ModelData {
   centralTopic?: StyleData,
   mainTopic?: StyleData,
   subTopic?: StyleData,
+  [key: string]: any,
 
 }
 
@@ -40,6 +41,11 @@ export default class Theme extends Model {
 
   getStyle(className: string) {
     return this._props.get(className)
+  }
+
+  getLevelStyle(level: number) {
+    const data = this._data?.[`level${level}`]
+    return data ? new Style(data) : undefined
   }
 
 }

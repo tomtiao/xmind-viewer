@@ -30,6 +30,7 @@ enum ClassType {
   CENTRAL_TOPIC = 'centralTopic',
   MAIN_TOPIC = 'mainTopic',
   SUB_TOPIC = 'subTopic',
+  FLOATING_TOPIC = 'floatingTopic',
 }
 
 enum StyleKey {
@@ -60,6 +61,7 @@ enum StyleKey {
   BORDER_LINE_WIDTH = 'border-line-width',
 
   FILL_COLOR = 'svg:fill',
+  FILL_PATTERN = 'fill-pattern',
 
   MULTI_LINE_COLORS = 'multi-line-colors',
 }

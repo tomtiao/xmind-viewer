@@ -11,6 +11,7 @@ export interface SheetData extends ModelData {
   // topicPositioning?: 'free' | 'fixed' ///'free', //or 'fixed'
   // topicOverlapping?: 'overlap' | 'none' ///'overlap', //or 'none'
   theme?: ThemeData
+  floatingTopicAutoColor?: string
   // relationships?: [
   //   RelationshipData,
   //   RelationshipData
@@ -42,6 +43,8 @@ export default class Sheet extends Model {
   get rootTopic(): Topic {
     return this._rootTopic
   }
+
+  get floatingTopicAutoColor() { return this._data.floatingTopicAutoColor }
 
   get theme(): Theme {
     return this._theme

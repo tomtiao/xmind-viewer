@@ -5,6 +5,8 @@ import ViewControllerType from '../common/constants/viewControllers'
 import SheetView from '../view/sheetView'
 import { getStyleValue } from '../utils/styleManager'
 import { StyleKey } from '../common/constants/styles'
+import { TopicType } from '../common/constants/models'
+import { merge } from '../utils/bounds'
 
 export default class SheetViewController extends ViewController {
 
@@ -27,6 +29,15 @@ export default class SheetViewController extends ViewController {
     this._centralBranchViewController = new BranchViewController(this._sheet.rootTopic, this)
     this._centralBranchViewController.sheetViewController = this
     this._centralBranchViewController.init()
+
+    let bounds = this._centralBranchViewController.bounds
+    this._sheet.rootTopic.getChildrenByType(TopicType.DETACHED).forEach(topic => {
+      const branch = new BranchViewController(topic, this)
+      branch.sheetViewController = this
+      branch.init()
+      bounds = merge(bounds, branch.bounds)
+    })
+    this._centralBranchViewController.bounds = bounds
 
     this._view.render({ bgColor: this._bgColor, bounds: this._centralBranchViewController.bounds })
   }

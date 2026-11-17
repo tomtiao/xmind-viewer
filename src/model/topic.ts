@@ -14,6 +14,11 @@ export interface TopicData extends ModelData {
   customWidth?: string,
   style?: StyleData,
   extensions?: Array<ExtensionData>,
+  markers?: Array<{ markerId: string }>,
+  image?: { src: string, width?: number, height?: number },
+  renderImage?: { src: string, width: number, height: number },
+  position?: { x: number, y: number },
+  branch?: string,
 }
 
 export interface ExtensionData {
@@ -26,11 +31,10 @@ export function parseTopic(data: TopicData, sheet: Sheet): Topic {
   topic.ownerSheet = sheet
 
   if (data.children) {
-    const type = TopicType.ATTACHED
-    const dataArr = data.children[type]
-    dataArr?.forEach(d => {
-      topic.addSubtopic(parseTopic(d, sheet), { type })
-    })
+    for (const type of [TopicType.ATTACHED, TopicType.DETACHED]) {
+      if (type === TopicType.ATTACHED && data.branch === 'folded') continue
+      data.children[type]?.forEach(d => topic.addSubtopic(parseTopic(d, sheet), { type }))
+    }
   }
 
   return topic
@@ -69,6 +73,11 @@ export default class Topic extends Model {
   get title(): string {
     return this._data.title
   }
+
+  get markers() { return this._data.markers || [] }
+  get renderImage() { return this._data.renderImage }
+  get position() { return this._data.position }
+  get id() { return this._data.id }
 
   get customWidth(): number {
     return parseInt(this._data.customWidth) || 0

@@ -70,9 +70,10 @@ export default class MindMapStyleSelector {
     let fontFamily = []
 
     // fontFamily.push(this.getLayeredStyleValue(target, StyleLayer.BEFORE_USER, key))
+    fontFamily.push(this.getUserStyleValue(target, key))
     fontFamily.push(this.getThemeStyleValue(target, key))
 
-    fontFamily = fontFamily.filter(item => item && item !== '$system$')
+    fontFamily = fontFamily.filter(item => this.isValidValue(item) && item !== '$system$')
     fontFamily = fontFamily.concat(['Nunito Sans', 'Microsoft YaHei', 'PingFang SC', 'Microsoft JhengHei'])
     fontFamily = fontFamily.reduce((arr, item) => {
       return arr.concat(item.split(','))
@@ -126,7 +127,7 @@ export default class MindMapStyleSelector {
   }
 
   protected isValidValue(value: string) {
-    return value && value !== ''
+    return !!value && value !== 'inherited'
   }
 
   getFontInfo(target: ViewController): FontInfo {

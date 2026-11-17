@@ -39,6 +39,7 @@ export default class BranchViewController extends ViewController {
     this._children = {}
 
     this._view = new BranchView()
+    this._view.content.attr('data-topic-id', topic.id)
   }
   
   init() {
@@ -60,7 +61,8 @@ export default class BranchViewController extends ViewController {
 
     branchLayout(this)
 
-    if (this.isCentralBranch()) {
+    if (this.isCentralBranch() || this.isFloatingRoot()) {
+      if (this.isFloatingRoot() && this.model.position) this.position = { ...this.model.position }
       this._initInner()
     }
   }
@@ -83,15 +85,17 @@ export default class BranchViewController extends ViewController {
   }
 
   isCentralBranch(): boolean {
-    return this.parent.type === ViewControllerType.SHEET
+    return this.parent.type === ViewControllerType.SHEET && this.model.type !== TopicType.DETACHED
   }
+
+  isFloatingRoot(): boolean { return this.parent.type === ViewControllerType.SHEET && this.model.type === TopicType.DETACHED }
 
   getStructureObject() {
     return getStructure(this.structureClass)
   }
 
   getLayer(): number {
-    if (this.isCentralBranch()) {
+    if (this.isCentralBranch() || this.isFloatingRoot()) {
       return 1
     }
 
@@ -171,8 +175,8 @@ export default class BranchViewController extends ViewController {
   private _updateStructureClass() {
     const modelStructureClass = this.model.structureClass as StructureClass
 
-    if (this.isCentralBranch()) {
-      this._structureClass = modelStructureClass || StructureClass.MAP
+    if (this.isCentralBranch() || this.isFloatingRoot()) {
+      this._structureClass = modelStructureClass || (this.isFloatingRoot() ? StructureClass.LOGIC_RIGHT : StructureClass.MAP)
       return
     }
 

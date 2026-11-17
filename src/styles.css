@@ -20,7 +20,13 @@ header {
   padding: 0 16px;
   color: #fff;
   background: #2e2e2e;
+  flex-wrap: wrap;
 }
+
+[data-topic-id] { cursor: pointer; }
+[data-topic-id].selected [data-name="topic-shape"] { stroke: #315efb; stroke-width: 2px; }
+.topic-editor { position: fixed; z-index: 10; box-sizing: border-box; font: 16px NeverMind, sans-serif; resize: both; }
+#image-width { width: 60px; }
 
 button {
   font: inherit;
@@ -48,3 +54,10 @@ button:disabled {
 .sheet-container {
   position: relative;
 }
+/* XMind NeverMind, SIL OFL 1.1; license and source are in assets/fonts/nevermind. */
+@font-face { font-family: NeverMind; src: url('./assets/fonts/nevermind/NeverMind-Regular.ttf'); font-weight: 400; }
+@font-face { font-family: NeverMind; src: url('./assets/fonts/nevermind/NeverMind-Medium.ttf'); font-weight: 500; }
+@font-face { font-family: NeverMind; src: url('./assets/fonts/nevermind/NeverMind-DemiBold.ttf'); font-weight: 600; }
+@font-face { font-family: NeverMind; src: url('./assets/fonts/nevermind/NeverMind-Bold.ttf'); font-weight: 700; }
+@font-face { font-family: NeverMind; src: url('./assets/fonts/nevermind/NeverMind-Extrabold.ttf'); font-weight: 800; }
+

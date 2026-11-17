@@ -23,6 +23,8 @@ export default class TopicViewController extends ViewController {
 
     this._topic = topic
     this._view = new TopicView()
+    this._view.image = topic.renderImage
+    this._view.markers = topic.markers.map(marker => marker.markerId)
 
     this._initStyle()
 
