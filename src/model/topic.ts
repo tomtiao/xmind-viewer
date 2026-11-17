@@ -120,11 +120,12 @@ export default class Topic extends Model {
   getUnbalancedInfo(): { rightSideCount: number } {
     const extension = this._extensionMap[ExtensionProvider.UNBALANCED_MAP]
     const content = extension && extension.content
-    if (content && content.length > 0) {
-      const info = content[0] as any
-      if (info.name === ExtensionContentName.RIGHT_NUMBER) {
-        const rightSideCount = parseInt(info.content || -1)
-        return rightSideCount >= 0 ? { rightSideCount } : null
+    if (Array.isArray(content)) {
+      const info = content.find((item: any) => item.name === ExtensionContentName.RIGHT_NUMBER) as { content?: string } | undefined
+      const value = info?.content
+      if (value !== undefined && /^\d+$/.test(value)) {
+        const rightSideCount = Number(value)
+        if (Number.isSafeInteger(rightSideCount) && rightSideCount <= this.getChildrenByType(TopicType.ATTACHED).length) return { rightSideCount }
       }
     }
   }

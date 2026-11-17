@@ -4,6 +4,7 @@ import BranchViewController from '../../../viewController/branchViewController'
 import { ClassType, StyleKey } from '../../../common/constants/styles'
 import { isAttachedBranch, getBranchIndex, getParentBranch } from '../../branchUtils'
 import defaultStyles from '../defaultStyles'
+import { TopicType } from '../../../common/constants/models'
 
 export default class TopicStyleSelector extends MindMapStyleSelector {
 
@@ -53,7 +54,11 @@ export default class TopicStyleSelector extends MindMapStyleSelector {
           if (this.getThemeStyleValue(target, key) === 'inherited') return '#000000'
           break
         case StyleKey.FILL_COLOR:
-          if (target.isFloatingRoot() && target.sheetViewController.model.floatingTopicAutoColor === 'follow-color-theme' && target.sheetViewController.hasMultiLineColors()) return target.sheetViewController.multiLineColors.split(' ')[0]
+          if (target.isFloatingRoot() && target.sheetViewController.model.floatingTopicAutoColor === 'follow-color-theme' && target.sheetViewController.hasMultiLineColors()) {
+            const colors = target.sheetViewController.multiLineColors.split(' ')
+            const index = target.sheetViewController.model.rootTopic.getChildrenByType(TopicType.DETACHED).indexOf(target.model)
+            return colors[Math.max(index, 0) % colors.length]
+          }
           if (target.getLayer() >= 3 && this.getThemeStyleValue(target, StyleKey.FILL_PATTERN) === 'solid' && this.getThemeStyleValue(target, key) === 'inherited') {
             const color = this._getMultiLineColors(target)
             if (/^#[0-9a-f]{6}$/i.test(color || '')) {

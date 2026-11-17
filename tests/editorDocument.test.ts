@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import JSZip from 'jszip'
-import { EditorDocument } from '../src/editorDocument'
+import { EditorDocument, rightSideCount } from '../src/editorDocument'
 import type { SheetData } from '../src/model/sheet'
+import { readFileSync } from 'node:fs'
 
 function document() {
   const sheets = [{ id: 's', title: 'Sheet', unknown: { keep: true }, arrangeableLayerOrder: ['root'], rootTopic: { id: 'root', title: 'Root', children: { attached: [{ id: 'a', title: 'A', extra: 7 }] } } }, { id: 'other', title: 'Other', rootTopic: { id: 'other-root', title: 'Other' } }] as unknown as SheetData[]
@@ -34,6 +35,8 @@ describe('document commands', () => {
     expect((doc.sheets[0] as any).arrangeableLayerOrder).not.toContain(id)
     ;(doc.sheets[0] as any).relationships = [{ end1Id: 'a' }]
     expect(() => doc.remove('a')).toThrow('关系线')
+    expect(() => doc.add('root', 'attached', 0)).toThrow('关系线')
+    expect(() => doc.move('a', 'root', 0)).toThrow('关系线')
     expect(doc.index.has('a')).toBe(true)
   })
   it('moves topics without cycles and restores their order with undo', () => {
@@ -44,5 +47,105 @@ describe('document commands', () => {
     expect(doc.index.get(child)?.parent?.id).toBe('root')
     doc.undo()
     expect(doc.index.get(child)?.parent?.id).toBe('a')
+  })
+  it('preserves image metadata through replacement, resizing and undo', () => {
+    const doc = document()
+    doc.index.get('a')!.topic.image = { src: 'xap:resources/old.png', width: 100, height: 50, align: 'right' } as any
+    doc.setImage('a', 'resources/new.png', 200, 100)
+    expect(doc.index.get('a')!.topic.image).toMatchObject({ align: 'right', width: 200, height: 100 })
+    doc.resizeImage('a', 80)
+    expect(doc.index.get('a')!.topic.image).toMatchObject({ width: 80, height: 40 })
+    expect(() => doc.resizeImage('a', NaN)).toThrow()
+    expect(() => doc.resizeImage('a', Infinity)).toThrow()
+    doc.undo()
+    expect(doc.index.get('a')!.topic.image).toMatchObject({ align: 'right', width: 200, height: 100 })
+    doc.undo()
+    expect(doc.index.get('a')!.topic.image?.src).toBe('xap:resources/old.png')
+  })
+  it('removes all floating subtree layer references and restores nested fold history', () => {
+    const doc = document()
+    const floating = doc.add('root', 'detached')
+    const child = doc.add(floating)
+    const grandchild = doc.add(child)
+    ;(doc.sheets[0] as any).arrangeableLayerOrder.push(child, grandchild)
+    doc.toggleFold(child)
+    doc.toggleFold(floating)
+    doc.undo()
+    expect(doc.index.get(floating)?.topic.branch).toBeUndefined()
+    expect(doc.index.get(child)?.topic.branch).toBe('folded')
+    doc.redo()
+    doc.remove(floating)
+    expect((doc.sheets[0] as any).arrangeableLayerOrder).toEqual(['root'])
+    doc.undo()
+    expect(doc.index.get(child)?.topic.branch).toBe('folded')
+    expect(doc.index.get(floating)?.topic.branch).toBe('folded')
+  })
+  it('does not add failed moves to history and inserts siblings at the requested index', () => {
+    const doc = document()
+    const first = doc.add('root', 'attached', 0)
+    expect(doc.sheets[0].rootTopic.children?.attached.map(t => t.id)).toEqual([first, 'a'])
+    expect(() => doc.move(first, first)).toThrow()
+    doc.undo()
+    expect(doc.index.has(first)).toBe(false)
+    expect(doc.index.has('a')).toBe(true)
+  })
+  it('expands a folded parent when adding a child and undoes both together', () => {
+    const doc = document()
+    doc.add('a')
+    doc.toggleFold('a')
+    const added = doc.add('a')
+    expect(doc.index.get('a')?.topic.branch).toBeUndefined()
+    doc.undo()
+    expect(doc.index.has(added)).toBe(false)
+    expect(doc.index.get('a')?.topic.branch).toBe('folded')
+  })
+  it('expands a folded destination as part of the move and restores it on undo', () => {
+    const doc = document()
+    const destination = doc.add('root')
+    doc.add(destination)
+    doc.toggleFold(destination)
+    doc.move('a', destination)
+    expect(doc.index.get('a')?.parent?.id).toBe(destination)
+    expect(doc.index.get(destination)?.topic.branch).toBeUndefined()
+    doc.undo()
+    expect(doc.index.get('a')?.parent?.id).toBe('root')
+    expect(doc.index.get(destination)?.topic.branch).toBe('folded')
+  })
+  it('preserves every untouched ZIP entry and all other sheet fields', async () => {
+    const zip = await JSZip.loadAsync(readFileSync('tests/fixtures/map-with-content.xmind'))
+    const sheets = JSON.parse(await zip.file('content.json')!.async('string'))
+    const other = { id: 'second', title: 'Second', rootTopic: { id: 'root-2', title: 'Unchanged', unknown: { value: [1, 2, 3] } }, unknownSheet: { opaque: true } }
+    sheets.push(other)
+    zip.file('custom.bin', new Uint8Array([0, 1, 2, 255]))
+    const untouched: Record<string, Uint8Array> = {}
+    for (const [path, file] of Object.entries(zip.files)) if (!file.dir && path !== 'content.json') untouched[path] = await file.async('uint8array')
+    const doc = new EditorDocument(sheets, zip)
+    doc.rename(sheets[0].rootTopic.id, 'Changed')
+    const output = await JSZip.loadAsync(await (await doc.save()).arrayBuffer())
+    for (const [path, bytes] of Object.entries(untouched)) expect(await output.file(path)!.async('uint8array')).toEqual(bytes)
+    const result = JSON.parse(await output.file('content.json')!.async('string'))
+    expect(result[1]).toEqual(other)
+  })
+  it('keeps the right-side partition consistent through structural changes and history', () => {
+    const doc = document()
+    const root = doc.sheets[0].rootTopic
+    root.structureClass = 'org.xmind.ui.map.clockwise'
+    const b = doc.add('root'), c = doc.add('root'), d = doc.add('root')
+    doc.setSide('a', 'left', 2)
+    expect(root.structureClass).toBe('org.xmind.ui.map.unbalanced')
+    expect(root.children!.attached.map(t => t.id)).toEqual([b, c, d, 'a'])
+    expect(rightSideCount(root)).toBe(1)
+    doc.setSide(d, 'right', 1)
+    expect(rightSideCount(root)).toBe(2)
+    const child = doc.add('root', 'attached', 2, undefined, true)
+    expect(rightSideCount(root)).toBe(3)
+    doc.remove(child)
+    expect(rightSideCount(root)).toBe(2)
+    doc.move(b, 'a')
+    expect(rightSideCount(root)).toBe(1)
+    doc.undo()
+    expect(rightSideCount(doc.sheets[0].rootTopic)).toBe(2)
+    doc.undo()
+    expect(rightSideCount(doc.sheets[0].rootTopic)).toBe(3)
   })
 })

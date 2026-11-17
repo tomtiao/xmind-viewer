@@ -7,6 +7,14 @@
     {
       "path": "map-with-content.reference.jpeg",
       "sha256": "7798b19c42af5b3fdcf3c0685f328f29b64878dfa1f3ecace2b1046b0d82c301"
+    },
+    {
+      "path": "editor-roundtrip.xmind",
+      "sha256": "3eb567e18d461aa83b235f71fcbd44148bf9b645247987bc00852edcfbf5b0a8"
+    },
+    {
+      "path": "editor-roundtrip.official.png",
+      "sha256": "9b30f497f430e2d06e9b97d99f669336ca5b44930c063aaa197af1990398ec1a"
     }
   ]
 }

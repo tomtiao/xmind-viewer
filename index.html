@@ -3,18 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>XMind Viewer</title>
+    <title>XMind Editor</title>
   </head>
   <body>
     <header>
-      <strong>XMind Viewer</strong>
+      <strong>XMind Editor</strong>
       <button type="button" id="open-file">打开 XMind 文件</button>
+      <label>工作表 <select id="sheet-select" aria-label="选择工作表" disabled></select></label>
       <button type="button" id="save-file">保存</button>
       <button type="button" id="add-child">添加子主题</button>
       <button type="button" id="add-sibling">添加同级主题</button>
       <button type="button" id="add-floating">添加自由主题</button>
       <button type="button" id="delete-topic">删除</button>
       <button type="button" id="fold-topic">折叠 / 展开</button>
+      <button type="button" id="side-left">移至左侧</button>
+      <button type="button" id="side-right">移至右侧</button>
       <button type="button" id="tag-red">红色标签</button>
       <button type="button" id="flag-red">红旗</button>
       <label>标记 <select id="marker-select" aria-label="选择标记"></select></label>
@@ -29,6 +32,7 @@
       <button type="button" id="zoom-in" aria-label="放大">+</button>
       <input id="input-dialog" type="file" accept=".xmind" aria-label="选择 XMind 文件" hidden />
       <span id="status" role="status" aria-live="polite"></span>
+      <small class="editor-hint">双击编辑文字；Tab / Enter 添加主题；拖至主题换层级、拖至边缘排序；拖动空白处平移。</small>
     </header>
     <main id="page-content" aria-label="思维导图"></main>
     <script type="module" src="/src/main.ts"></script>

@@ -110,6 +110,70 @@ test('applies level 3 fill to a plain subtopic', async ({ page }) => {
   await expect(shape).toHaveAttribute('fill', '#ffe1e1')
 })
 
+test('opens a map with a broken image and keeps the rest editable', async ({ page }) => {
+  const zip = await JSZip.loadAsync(readFileSync('tests/fixtures/map-with-content.xmind'))
+  const path = Object.keys(zip.files).find(name => name.endsWith('.jpg'))!
+  zip.file(path, 'invalid image')
+  await page.goto('/')
+  await page.locator('#input-dialog').setInputFiles({ name: 'broken.xmind', mimeType: 'application/octet-stream', buffer: Buffer.from(await zip.generateAsync({ type: 'uint8array' })) })
+  await expect(page.getByRole('status')).toContainText('图片无法读取')
+  await expect(page.locator('#page-content')).toContainText('Floating Topic')
+  await page.locator('[data-topic-id="59aba10d-0b18-4f00-a99a-b7d65ebe838a"]').dblclick()
+  await page.locator('.topic-editor').fill('仍可编辑')
+  await page.locator('.topic-editor').press('Enter')
+  await expect(page.locator('#page-content')).toContainText('仍可编辑')
+})
+
+test('preserves image aspect ratio when only height is specified', async ({ page }) => {
+  const zip = await JSZip.loadAsync(readFileSync('tests/fixtures/map-with-content.xmind'))
+  const sheets = JSON.parse(await zip.file('content.json')!.async('string'))
+  sheets[0].rootTopic.children.attached[2].children.attached[0].image.height = 80
+  zip.file('content.json', JSON.stringify(sheets))
+  await page.goto('/')
+  await page.locator('#input-dialog').setInputFiles({ name: 'height.xmind', mimeType: 'application/octet-stream', buffer: Buffer.from(await zip.generateAsync({ type: 'uint8array' })) })
+  const image = page.locator('#page-content image')
+  await expect(image).toHaveAttribute('height', '80')
+  expect(Number(await image.getAttribute('width'))).toBeCloseTo(80 * 2048 / 1647, 1)
+})
+
+test('floating tree children use subtopic style', async ({ page }) => {
+  const zip = await JSZip.loadAsync(readFileSync('tests/fixtures/map-with-content.xmind'))
+  const sheets = JSON.parse(await zip.file('content.json')!.async('string'))
+  sheets[0].rootTopic.children.detached[0].children = { attached: [{ id: 'floating-child', title: 'Floating child' }] }
+  zip.file('content.json', JSON.stringify(sheets))
+  await page.goto('/')
+  await page.locator('#input-dialog').setInputFiles({ name: 'floating.xmind', mimeType: 'application/octet-stream', buffer: Buffer.from(await zip.generateAsync({ type: 'uint8array' })) })
+  await expect(page.locator('[data-topic-id="floating-child"] text')).toHaveAttribute('font-size', '14')
+})
+
+test('floating topics cycle automatic colors in document order', async ({ page }) => {
+  const zip = await JSZip.loadAsync(readFileSync('tests/fixtures/map-with-content.xmind'))
+  const sheets = JSON.parse(await zip.file('content.json')!.async('string'))
+  sheets[0].rootTopic.children.detached.push({ id: 'floating-second', title: 'Second', position: { x: 100, y: -193 } })
+  zip.file('content.json', JSON.stringify(sheets))
+  await page.goto('/')
+  await page.locator('#input-dialog').setInputFiles({ name: 'floating-colors.xmind', mimeType: 'application/octet-stream', buffer: Buffer.from(await zip.generateAsync({ type: 'uint8array' })) })
+  await expect(page.locator('[data-topic-id="e50dffd4-dc4d-4e42-a779-b8bd1fc19666"] [data-name="topic-shape"]')).toHaveAttribute('fill', '#ff6b6b')
+  await expect(page.locator('[data-topic-id="floating-second"] [data-name="topic-shape"]')).toHaveAttribute('fill', '#ff9f69')
+})
+
+test('selects a supported sheet and preserves an unsupported sheet', async ({ page }) => {
+  const zip = await JSZip.loadAsync(readFileSync('tests/fixtures/map-with-content.xmind'))
+  const sheets = JSON.parse(await zip.file('content.json')!.async('string'))
+  sheets.unshift({ id: 'other-sheet', title: 'Other', rootTopic: { id: 'other-root', title: 'Other root', structureClass: 'org.xmind.ui.logic.right' }, extra: { preserved: true } })
+  zip.file('content.json', JSON.stringify(sheets))
+  await page.goto('/')
+  await page.locator('#input-dialog').setInputFiles({ name: 'sheets.xmind', mimeType: 'application/octet-stream', buffer: Buffer.from(await zip.generateAsync({ type: 'uint8array' })) })
+  await expect(page.locator('#sheet-select')).toHaveValue('1')
+  await expect(page.locator('#page-content')).toContainText('Central Topic')
+  await page.locator('#sheet-select').selectOption('0')
+  await expect(page.locator('#page-content')).toContainText('Other root')
+  await page.getByRole('button', { name: '添加子主题' }).click()
+  await expect(page.getByRole('status')).toContainText('暂不支持编辑')
+  await page.locator('#sheet-select').selectOption('1')
+  await expect(page.locator('#page-content')).toContainText('Central Topic')
+})
+
 test('shows unknown markers and allows their removal without losing other markers', async ({ page }) => {
   const zip = await JSZip.loadAsync(readFileSync('tests/fixtures/map-with-content.xmind'))
   const sheets = JSON.parse(await zip.file('content.json')!.async('string'))
@@ -135,14 +199,18 @@ test('edits, folds, undoes and saves the original archive', async ({ page }) => 
   const before = await root.boundingBox()
   await topic.dblclick()
   await page.locator('.topic-editor').fill('中文编辑')
+  await page.locator('.topic-editor').dispatchEvent('compositionstart')
+  await page.locator('.topic-editor').dispatchEvent('keydown', { key: 'Enter', isComposing: true })
+  await expect(page.locator('.topic-editor')).toHaveCount(1)
+  await page.locator('.topic-editor').dispatchEvent('compositionend')
   await page.locator('.topic-editor').press('Enter')
   await expect(page.locator('#page-content')).toContainText('中文编辑')
   const after = await root.boundingBox()
-  expect(Math.abs(before!.x - after!.x)).toBeLessThan(2)
-  expect(Math.abs(before!.y - after!.y)).toBeLessThan(2)
+  expect(Math.abs((before!.x + before!.width / 2) - (after!.x + after!.width / 2))).toBeLessThan(2)
+  expect(Math.abs((before!.y + before!.height / 2) - (after!.y + after!.height / 2))).toBeLessThan(2)
   await page.getByRole('button', { name: '折叠 / 展开' }).click()
   await expect(page.locator('[data-topic-id="b05f2811-380c-417b-8266-b23b2d0ee8d9"]')).toHaveCount(0)
-  await page.getByRole('button', { name: '撤销' }).click()
+  await page.keyboard.press('Control+z')
   await expect(page.locator('[data-topic-id="b05f2811-380c-417b-8266-b23b2d0ee8d9"]')).toHaveCount(1)
   const download = page.waitForEvent('download')
   await page.getByRole('button', { name: '保存', exact: true }).click()
@@ -175,6 +243,62 @@ test('dragging a floating topic after zoom preserves its grab offset', async ({ 
   const zip = await JSZip.loadAsync(Buffer.concat(chunks))
   const sheets = JSON.parse(await zip.file('content.json')!.async('string'))
   expect(sheets[0].rootTopic.children.detached[0].position).toEqual({ x: -17, y: -163 })
+})
+
+test('moves a main topic to the other side and saves the side partition', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('#input-dialog').setInputFiles('tests/fixtures/map-with-content.xmind')
+  await expect(page.getByRole('status')).toHaveText('map-with-content.xmind')
+  const topic = page.locator('[data-topic-id="4b645861-be64-472d-8731-0f16695ed994"]')
+  const root = page.locator('[data-topic-id="a81aaf27-912e-45dd-ae58-e1afe91a4a62"]')
+  await topic.click()
+  expect((await topic.boundingBox())!.x).toBeGreaterThan((await root.boundingBox())!.x)
+  await page.getByRole('button', { name: '移至左侧' }).click()
+  await expect.poll(async () => { const a = await topic.boundingBox(), b = await root.boundingBox(); return !!a && !!b && a.x < b.x }).toBe(true)
+  const download = page.waitForEvent('download')
+  await page.getByRole('button', { name: '保存', exact: true }).click()
+  const stream = await (await download).createReadStream()
+  const chunks: Buffer[] = []
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk))
+  const zip = await JSZip.loadAsync(Buffer.concat(chunks))
+  const sheet = JSON.parse(await zip.file('content.json')!.async('string'))[0]
+  expect(sheet.rootTopic.structureClass).toBe('org.xmind.ui.map.unbalanced')
+  expect(sheet.rootTopic.extensions.find((item: any) => item.provider === 'org.xmind.ui.map.unbalanced').content[0].content).toBe('1')
+  await page.getByRole('button', { name: '撤销' }).click()
+  await expect.poll(async () => { const a = await topic.boundingBox(), b = await root.boundingBox(); return !!a && !!b && a.x > b.x }).toBe(true)
+})
+
+test('reads an unbalanced side count after unknown extension entries', async ({ page }) => {
+  const zip = await JSZip.loadAsync(readFileSync('tests/fixtures/map-with-content.xmind'))
+  const sheets = JSON.parse(await zip.file('content.json')!.async('string'))
+  const root = sheets[0].rootTopic
+  root.structureClass = 'org.xmind.ui.map.unbalanced'
+  root.extensions = [{ provider: 'org.xmind.ui.map.unbalanced', content: [{ name: 'unknown', content: 'kept' }, { name: 'right-number', content: '1' }] }]
+  zip.file('content.json', JSON.stringify(sheets))
+  await page.goto('/')
+  await page.locator('#input-dialog').setInputFiles({ name: 'unbalanced.xmind', mimeType: 'application/octet-stream', buffer: Buffer.from(await zip.generateAsync({ type: 'uint8array' })) })
+  await expect(page.getByRole('status')).toHaveText('unbalanced.xmind')
+  const center = (await page.locator('[data-topic-id="a81aaf27-912e-45dd-ae58-e1afe91a4a62"]').boundingBox())!
+  const right = (await page.locator('[data-topic-id="4b645861-be64-472d-8731-0f16695ed994"]').boundingBox())!
+  const left = (await page.locator('[data-topic-id="59aba10d-0b18-4f00-a99a-b7d65ebe838a"]').boundingBox())!
+  expect(right.x).toBeGreaterThan(center.x)
+  expect(left.x).toBeLessThan(center.x)
+})
+
+test('save shortcut commits an active title before downloading', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('#input-dialog').setInputFiles('tests/fixtures/map-with-content.xmind')
+  await expect(page.getByRole('status')).toHaveText('map-with-content.xmind')
+  await page.locator('[data-topic-id="4b645861-be64-472d-8731-0f16695ed994"]').dblclick()
+  await page.locator('.topic-editor').fill('快捷保存')
+  const download = page.waitForEvent('download')
+  await page.locator('.topic-editor').press('Control+s')
+  const stream = await (await download).createReadStream()
+  const chunks: Buffer[] = []
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk))
+  const zip = await JSZip.loadAsync(Buffer.concat(chunks))
+  const sheets = JSON.parse(await zip.file('content.json')!.async('string'))
+  expect(sheets[0].rootTopic.children.attached[0].title).toBe('快捷保存')
 })
 
 test('edits a marker and replaces and resizes an image with resource manifest', async ({ page }) => {

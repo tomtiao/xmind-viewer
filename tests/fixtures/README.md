@@ -4,6 +4,8 @@
 | --- | --- | --- |
 | [map-with-content.xmind](map-with-content.xmind) | 用户提供的 `Mind Map (2).xmind`，按原始字节保存 | MAP、标记、图片、自由主题及资源引用 |
 | [map-with-content.reference.jpeg](map-with-content.reference.jpeg) | 用户提供的 `Mind Map.jpeg`，官方 Web 导出；用户确认与网页呈现一致 | 排版、主题内容、连线和配色对照 |
+| [editor-roundtrip.xmind](editor-roundtrip.xmind) | 基于原始样本由本编辑器交互修改并导出 | 官方客户端重新打开时的换侧、折叠、自由主题位移和图片缩放 |
+| [editor-roundtrip.official.png](editor-roundtrip.official.png) | Xmind 27.01.05089 打开上述文件时的截图 | 上述文件的官方呈现证据 |
 
 文件校验值由 [manifest.json](manifest.json) 维护。原始样本和参考图保持不变；新增样本单独命名，记录来源、用途和哈希。
 

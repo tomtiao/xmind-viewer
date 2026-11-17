@@ -6,7 +6,7 @@
 
 支持文字、子主题与同级主题增删、层级和顺序调整、标记、图片、自由主题、折叠展开、选择、缩放平移、拖拽及撤销重做。
 
-主图从 `org.xmind.ui.map.clockwise` 开始，保留下级布局依赖的 `logic.left`、`logic.right`。unbalanced、裸 MAP 和缺省结构按样本确认语义后纳入。多 Sheet 文件保留全部内容，仅对支持的结构开放编辑。
+主图支持 `org.xmind.ui.map.clockwise` 和带有效 `right-number` 的 `org.xmind.ui.map.unbalanced`，保留下级布局依赖的 `logic.left`、`logic.right`。显式换侧时转换为 unbalanced 并维护左右分区；此编码已由官方客户端读取验证。裸 MAP 和缺省结构仍需样本确认。多 Sheet 文件保留全部内容，仅对支持的结构开放编辑。
 
 ## 架构约束
 

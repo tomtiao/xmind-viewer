@@ -27,6 +27,7 @@ header {
 [data-topic-id].selected [data-name="topic-shape"] { stroke: #315efb; stroke-width: 2px; }
 .topic-editor { position: fixed; z-index: 10; box-sizing: border-box; font: 16px NeverMind, sans-serif; resize: both; }
 #image-width { width: 60px; }
+.editor-hint { flex-basis: 100%; color: #ddd; padding-bottom: 6px; }
 
 button {
   font: inherit;
