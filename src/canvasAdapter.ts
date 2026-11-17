@@ -2,6 +2,7 @@ import JSZip from "jszip";
 import { SnowbrushRenderer } from "./index";
 import type { SheetData } from "./model/sheet";
 import type { TopicData } from "./model/topic";
+import { resolveImageSize } from "./imageSize";
 
 export async function prepareImages(
   topic: TopicData,
@@ -22,14 +23,7 @@ export async function prepareImages(
       const image = new Image();
       image.src = src;
       await image.decode();
-      const width =
-        topic.image.width ||
-        (topic.image.height
-          ? (topic.image.height * image.naturalWidth) / image.naturalHeight
-          : Math.min(200, image.naturalWidth));
-      const height =
-        topic.image.height ||
-        (width * image.naturalHeight) / image.naturalWidth;
+      const { width, height } = resolveImageSize(topic.image, image.naturalWidth, image.naturalHeight);
       topic.renderImage = { src, width, height };
     } catch {
       warnings.push(`主题“${topic.title}”的图片无法读取`);
